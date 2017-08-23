@@ -4,7 +4,7 @@
 
 * This one outputs details for a Coxeter group specified by the user.
 * For example, the user may execute the program with argument "B 4" to get details about the Coxeter group $B_4$.
-* The details included are the order, the Coxeter matrix, all its elements, its reflections, its involutions, its fixed-point-free involutions, and a Hasse diagram of the group elements under Bruhat order as a .dot file.
+* The details included are the order, the Coxeter matrix, all its elements, its reflections, its involutions, its fixed-point-free involutions, and a Hasse diagram of the group elements under Bruhat order as a .dot file with the fixed-point-free involutions emphasized. (I should note that I wrote this at a time when I was spending a *lot* of time thinking about fixed-point-free involutions, so these objects were of particular interest to me.)
 * This has only been completed for groups of type $A$, $B$, $D$, and $I$. 
 * This program functions with a custom Coxeter group class and permutation library I've written.
 
