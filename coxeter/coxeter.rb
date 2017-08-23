@@ -7,7 +7,7 @@ def time
 	puts "[time elapsed: #{Time.now - start} seconds]".rjust(50)
 end
 #################################################
-system('clear')
+#system('clear')
 
 type = ARGV[0].capitalize
 n = ARGV[1].to_i
