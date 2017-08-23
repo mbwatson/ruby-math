@@ -1,0 +1,423 @@
+require 'matrix'
+class Array
+  def to_Aperm
+    return Aperm.new(self)
+  end
+  
+  def to_Bperm
+    return Bperm.new(self)
+  end
+  
+  def subset?(arr)
+    return (self-arr).empty?
+  end
+  
+  def supset?(arr)
+    return (arr-self).empty?
+  end
+end
+#################################################
+class Permutation < Array
+
+  def show_info
+    print "PERM : ";  p self
+    print "PERM^{-1} : "; p inverse
+    print "INVERSION NUMBER : ";  p inversion_number
+  end
+  
+  def inversion_number
+    n = size
+    inv_num = 0
+    0.upto(n-1) do |i|
+      (i+1).upto(n-1) do |j|
+        inv_num += 1 if self[i] > self[j]
+      end
+    end
+    0.upto(n-1) do |i|
+      (i).upto(n-1) do |j|
+        inv_num += 1 if -self[i] > self[j]
+      end
+    end
+    return inv_num
+  end
+    
+  def to_s
+    string = "[#{self[0]}"
+    1.upto(self.size-1) do |i|
+      string << "," + self[i].to_s
+    end
+    string << "]"
+    return string
+  end
+end
+#################################################
+class Aperm < Permutation
+  
+  attr_accessor :n
+  @n = self.to_a.size
+  
+  def inverse
+    w_inverse = Aperm.new
+    1.upto(self.size) do |i|
+      w_inverse[i-1] = index(i)+1
+    end
+    return w_inverse
+  end
+  
+  def multiply(x)
+    product = Aperm.new
+    n = self.size
+    if x.size == n
+      0.upto(n-1) do |i|
+        product[i] = self[x[i]-1]
+      end
+      return product
+    else 
+      return nil
+    end  
+  end
+  
+  def conjugate(w)
+    return w.multiply(self.multiply(w.inverse))
+  end
+  
+  def inversions
+    inversions = Array.new
+    reflections.each do |t|
+      inversions << t if self.multiply(t).inversion_number < self.inversion_number
+    end
+    return inversions
+  end
+
+  def rises
+    ascents = Array.new
+    0.upto(size-2) do |i|
+      (i+1).upto(size-1) do |j|
+        if self[i] < self[j]
+          ascents << t(size,i+1,j+1)
+        end
+      end
+    end
+    return ascents
+  end
+
+end
+#################################################
+class Bperm < Permutation
+  
+  def maps(i)
+    if i > 0
+      return self[i-1]
+    else return -self[-i-1]
+    end
+  end
+  
+  def multiply(x)
+    product = Bperm.new
+    n = self.size
+    if x.size == n
+      1.upto(n) do |i|
+          product << maps(x.maps(i))
+      end
+      return product
+    else 
+      return nil
+    end
+  end
+  
+  def inverse
+    w_inverse = Bperm.new
+    1.upto(self.size) do |i|
+      if self[i-1] > 0
+        w_inverse[self[i-1]-1] = i
+      else
+        w_inverse[-self[i-1]-1]= -i
+      end
+    end
+    return w_inverse
+  end
+  
+  def conjugate(w)
+    return w.multiply(self.multiply(w.inverse))
+  end
+  
+  def rises
+    ascents = Array.new
+    0.upto(size-2) do |i|
+      (i+1).upto(size-1) do |j|
+        if self[i] < self[j]
+          ascents << t(size,i+1,j+1).to_Bperm
+        end
+      end
+    end
+    if self[0] < 0
+    	ascents << ([-1] | (2..self.size).to_a).to_Bperm
+    end
+    return ascents
+  end
+
+end
+#################################################
+def time
+	start = Time.now
+	yield
+	print "\n time elapsed: #{Time.now - start} seconds\n\n"
+end
+#################################################
+def subset_vector(n,subset)
+  vector = Array.new
+  1.upto(n) do |i|
+    if subset.include?(i)
+      vector << -1
+     else
+      vector << 1
+    end  
+  end
+  return vector
+end
+
+def componentwise_product(v1,v2)
+  product = Array.new
+  if v1.size == v2.size
+    0.upto(v1.size-1) do |i|
+      product << v1[i]*v2[i]
+    end
+    return product
+  else 
+    return nil
+  end  
+end
+#################################################
+def a(n)
+  elements = Array.new
+  (1..n+1).to_a.permutation(n+1).to_a.each do |perm|
+    elements << perm.to_Aperm
+  end
+  return elements
+end
+
+def b(n)
+  bn = Array.new
+  a(n-1).each do |perm|
+    0.upto(n) do |k|
+      perm.combination(k).each do |kset|
+        bn << componentwise_product(perm,subset_vector(n,kset)).to_Bperm
+      end
+    end
+  end
+  return bn
+end
+
+def d(n)
+  dn = Array.new
+  a(n-1).each do |perm|
+    0.upto((n/2).floor) do |k|
+      perm.combination(2*k).each do |kset|
+        dn << componentwise_product(perm,subset_vector(n,kset)).to_Bperm
+      end
+    end
+  end
+  return dn
+end
+#################################################
+def generator_set(type,n)
+  generators = Array.new
+  case type
+    when 'A'
+      1.upto(n) do |i|
+        t = (1..n+1).to_a.to_Aperm
+        t[i-1], t[i] = t[i], t[i-1]
+        generators << t
+      end
+    when 'B'
+      s0 = [-1]+(2..n).to_a
+      generators << s0.to_Bperm
+      1.upto(n-1) do |i|
+        t = (1..n).to_a.to_Bperm
+        t[i-1], t[i] = t[i], t[i-1]
+        generators << t
+      end
+    when 'D'
+      s0 = [-2,-1]+(3..n).to_a
+      generators << s0.to_Bperm
+      1.upto(n-1) do |i|
+        t = (1..n).to_a.to_Bperm
+        t[i-1], t[i] = t[i], t[i-1]
+        generators << t
+      end
+  end
+  return generators
+end
+
+def t(n,i,j)
+  t = (1..n).to_a.to_Aperm
+  t[i-1], t[j-1] = t[j-1], t[i-1]
+  return t
+end
+#################################################
+class CoxeterGroup
+  attr_accessor :type, :n, :generators, :reflections, :elements, :size
+  
+  def initialize(type,n)
+    @type = type
+    @n = n
+    @generators = generator_set(type,n)
+    case type
+      when 'A'
+        @elements = a(n)
+      when 'B'
+        @elements = b(n)
+      when 'D'
+        @elements = d(n)
+      else raise "Only types A, B, and D"
+    end
+    @elements.sort! { |x,y| x.inversion_number <=> y.inversion_number }
+    @size = elements.size
+    @reflections = Array.new
+    generators.each do |si|
+      elements.each do |w|
+        wsiw = si.conjugate(w)
+        @reflections << wsiw unless @reflections.include?(wsiw)
+      end
+    end
+  end
+  
+  def descents(x)
+    descents = Array.new
+    reflections.each do |t|
+      descents << t if x.multiply(t).inversion_number < x.inversion_number
+    end
+    return descents
+  end
+
+  def ascents(x)
+    ascents = Array.new
+    n = x.size
+    0.upto(n-2) do |i|
+      (i+1).upto(n-1) do |j|
+        if x[i] < x[j]
+          ascents << t(n,i,j)
+        end
+      end
+    end
+#    reflections.each do |t|
+#      ascents << t if x.multiply(t).inversion_number > x.inversion_number
+#    end
+    return ascents
+  end
+
+  def weak_descents(x)
+    descents = Array.new
+    generators.each do |t|
+      descents << t if x.multiply(t).inversion_number > x.inversion_number
+    end
+    return descents
+  end
+
+  def weak_ascents(x)
+    ascents = Array.new
+    generators.each do |t|
+      ascents << t if x.multiply(t).inversion_number > x.inversion_number
+    end
+    return ascents
+  end
+
+  def successors(x)
+    neighbor_set = Array.new
+    ascents(x).each do |t|
+      neighbor_set << x.multiply(t)
+    end    
+    return neighbor_set
+  end
+  
+  def filter(x)
+    filter = successors(x).push(x)
+    successors(x).each do |y|
+        filter = filter | filter(y)
+    end
+    return filter.uniq
+  end
+  
+  def predecessors(x)
+    predecessor_set = Array.new
+    descents(x).each do |t|
+      predecessor_set << x.multiply(t)
+    end    
+    return predecessor_set
+  end
+  
+  def ideal(x)
+    ideal = predecessors(x).push(x)
+    predecessors(x).each do |y|
+        ideal = ideal | ideal(y)
+    end
+    return ideal.uniq
+  end
+  
+  def show_summary
+    puts
+    print "Coxeter group: #{type}_#{n} = <"
+    0.upto(generators.size - 1) do |i|
+      print " #{generators[i]}"; print "," if i < generators.size - 1
+    end
+    print " >\n  Reflections: {"
+    0.upto(reflections.size - 1) do |i|
+      print " #{reflections[i]}"; print "," if i < reflections.size - 1
+    end
+    puts " }\n"
+    print " | #{type}_#{n} | = #{elements.size}\n"
+  end
+  
+end
+#################################################
+class BruhatGraph
+  attr_accessor :nodes, :edges, :rank
+  def initialize(group,w)
+    @nodes = group.elements
+    @rank = group.elements[-1].inversion_number
+    @edges = Array.new
+    path = Array.new
+    n = group.elements.size
+    
+    0.upto(rank) do |k|
+      group.elements.select{ |x| x.inversion_number == k }.each do |x|
+        case w
+          when "strong"
+            ascents_x = x.rises
+          when "weak"
+            ascents_x = group.weak_ascents(x)
+        end
+        ascents_x.each do |t|
+          xt = x.multiply(t)
+          @edges << [x,xt] if ((group.ideal(xt)-[xt]) & group.successors(x)).empty? or (xt.inversion_number == k + 1)
+        end
+      end
+    end
+  end
+    
+  def hassify(filename)
+	  dotfile = String.new
+	  dotfile << "digraph G {"
+	  dotfile << "mincross = 1.0;"
+	  dotfile << "\tnode [shape = plaintext, height = .1, width = .1, fontsize = 8];\n"
+	  dotfile << "\tedge [arrowhead = none, labelfontsize = 6];\n\n"
+	  nodes.each do |node|
+		  dotfile << "\t\"#{node.to_s}\" [label=\"#{node.to_s}\"];\n"
+	  end
+	  dotfile << "\n"
+	  edges.each do |edge|
+      dotfile << "\t\"#{edge[1].to_s}\" -> \"#{edge[0].to_s}\";"
+	  end
+	  dotfile << "}"
+	  #save dot file
+	  #file = File.open("dotfile.dot","w") do |f1|
+	  # f1.puts dotfile
+	  #end
+	  command = "echo \'#{dotfile}\' | dot -Tpng -o #{filename}.png"
+	  system(command)
+  end
+  
+  def transitive_closure
+    
+  end
+end

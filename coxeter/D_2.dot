@@ -1,0 +1,13 @@
+digraph G {
+
+	mincross = 1.0;
+	node [shape = plaintext, height = .1, width = .1, fontsize = 8];
+	edge [arrowhead = none, labelfontsize = 6];
+
+	"[2,1]" [fontcolor=red];
+	"[-2,-1]" [fontcolor=red];
+	"[-1,-2]" [fontcolor=red];
+
+	"[2,1]" -> "[1,2]";
+	"[-1,-2]" -> "[-2,-1]";
+}
